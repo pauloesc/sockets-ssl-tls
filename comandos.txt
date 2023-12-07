@@ -1,0 +1,87 @@
+#======================================================================
+#generar un certificado raiz y un certificado dependiente del certificado raiz
+
+openssl genpkey -algorithm RSA -out root.key
+openssl req -x509 -new -key root.key -out root.crt
+openssl genpkey -algorithm RSA -out server.key
+openssl req -new -key server.key -out server.csr
+openssl x509 -req -in server.csr -CA root.crt -CAkey root.key -out server.crt -CAcreateserial
+
+
+    openssl genpkey -algorithm RSA -out root.key
+        Este comando genera una nueva clave privada RSA (-algorithm RSA) y la guarda en un archivo llamado root.key.
+        La clave privada se utiliza para firmar certificados y asegurar la comunicación segura.
+
+    openssl req -x509 -new -key root.key -out root.crt
+        Este comando crea una solicitud de certificado (CSR) autofirmada (-x509) utilizando la clave privada root.key que generaste en el paso anterior.
+        La solicitud de certificado autofirmada es un certificado raíz. El resultado se guarda en un archivo llamado root.crt.
+        El certificado raíz es utilizado como la autoridad de certificación (CA) para firmar otros certificados.
+
+    openssl genpkey -algorithm RSA -out server.key
+        Este comando genera otra clave privada RSA, esta vez para el servidor, y la guarda en un archivo llamado server.key.
+        Esta clave privada se utilizará para el certificado del servidor.
+
+    openssl req -new -key server.key -out server.csr
+        Este comando crea una nueva solicitud de certificado (CSR) utilizando la clave privada del servidor (server.key).
+        La CSR contiene la información del servidor, como su nombre y otros detalles, y se guarda en un archivo llamado server.csr.
+        Esta solicitud se enviará a la autoridad de certificación (en este caso, el certificado raíz) para su firma.
+
+    openssl x509 -req -in server.csr -CA root.crt -CAkey root.key -out server.crt -CAcreateserial
+        Este comando toma la solicitud de certificado del servidor (server.csr) y la firma utilizando el certificado raíz (root.crt) y su clave privada (root.key).
+        El resultado es el certificado del servidor, que se guarda en un archivo llamado server.crt.
+        El certificado del servidor ahora está firmado por la autoridad de certificación representada por el certificado raíz.
+
+
+sudo cp root.crt /usr/local/share/ca-certificates/
+sudo update-ca-certificates
+
+
+#======================================================================
+https://www.youtube.com/watch?v=12W3TnbvXSc
+
+#======================================================================
+___generar certificados de otra manera____
+
+openssl genrsa -out clave_privada_paulo.pem 2048
+genrsa: Es un subcomando de OpenSSL que se utiliza para generar claves RSA.
+
+
+openssl rsa -in clave_privada_paulo.pem -pubout -out clave_publica_paulo.pem
+rsa: Este es el subcomando que se utiliza para realizar operaciones relacionadas con claves RSA.
+-pubout: Esta opción indica a OpenSSL que genere la clave pública a partir de la clave privada de entrada.
+Especificar esta opción es lo que hace que OpenSSL genere la clave pública.
+
+
+openssl req -new -key clave_privada_paulo.pem -out certificado_paulo_para_firmar.csr
+req: Este es el subcomando que se utiliza para realizar operaciones relacionadas con solicitudes de certificados.
+-new: Esta opción indica a OpenSSL que debe crear una nueva solicitud de firma de certificado.
+
+
+#autofirmar
+openssl x509 -req -days 365 -in certificado_paulo_para_firmar.csr -signkey clave_privada_paulo.pem -out certificado_final_paulo.crt
+x509: El subcomando utilizado para trabajar con certificados X.509.
+-req: Indica que se está procesando una solicitud de firma de certificado (CSR).
+-signkey clave_privada_paulo.pem: Indica la clave privada con la que se firmará la CSR.
+
+
+
+#para ver el certificado
+openssl asn1parse -in certificado_final_paulo.crt
+#======================================================================
+
+
+#ahora unos comandos para firmar un archivo
+openssl dgst -c -sign clave_privada_paulo.pem -out pp.txt.firmado pp.txt
+openssl dgst se utiliza en OpenSSL para realizar operaciones de resumen criptográfico (hashing) y firma digital
+-c, el comando imprimirá la firma digital en formato hexadecimal en la salida estándar, además de guardarla en el archivo "pp.txt.firmado"
+Indica que deseas firmar el archivo utilizando la clave privada contenida en el archivo "clave_privada_paulo.pem"
+pp.txt es lo que quiero firmar
+
+ahora cualquiera que aplique la calve publica al fichero pp.txt.firmado podra verificar si lo firmo paulo.
+
+el comando para verificar es:
+openssl dgst -c -verify clave_publica_paulo.pem -signature pp.txt.firmado pp.txt
+
+#======================================================================
+
+
